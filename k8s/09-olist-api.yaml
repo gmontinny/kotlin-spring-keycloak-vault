@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: olist-api
+  namespace: olist
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: olist-api
+  template:
+    metadata:
+      labels:
+        app: olist-api
+    spec:
+      initContainers:
+        - name: wait-deps
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z postgres-app 5432; do sleep 2; done
+              until nc -z keycloak 8080; do sleep 2; done
+              until nc -z vault 8200; do sleep 2; done
+      containers:
+        - name: olist-api
+          image: olist-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9090
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-app:5432/olist_db
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: olist-secrets
+                  key: DB_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: olist-secrets
+                  key: DB_PASSWORD
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI
+              value: http://keycloak:8080/realms/olist-realm
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+              value: http://keycloak:8080/realms/olist-realm
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+              value: http://keycloak:8080/realms/olist-realm/protocol/openid-connect/certs
+            - name: SPRING_CLOUD_VAULT_ENABLED
+              value: "true"
+            - name: SPRING_CLOUD_VAULT_URI
+              value: http://vault:8200
+            - name: SPRING_CLOUD_VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: olist-secrets
+                  key: VAULT_TOKEN
+            - name: FLYWAY_LOCATIONS
+              value: classpath:db/migration/structure
+          readinessProbe:
+            httpGet:
+              path: /v3/api-docs
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v3/api-docs
+              port: 9090
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: olist-api
+  namespace: olist
+spec:
+  selector:
+    app: olist-api
+  ports:
+    - port: 9090
+      targetPort: 9090

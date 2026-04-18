@@ -1,0 +1,12 @@
+project_id       = "CHANGE_ME_your-gcp-project-id"
+region           = "us-central1"
+zone             = "us-central1-a"
+project_name     = "olist"
+environment      = "dev"
+db_username      = "olist_user"
+db_password      = "CHANGE_ME_olist_pass"
+kc_db_username   = "keycloak_user"
+kc_db_password   = "CHANGE_ME_keycloak_pass"
+gke_machine_type = "e2-medium"
+gke_node_count   = 2
+gke_max_nodes    = 4

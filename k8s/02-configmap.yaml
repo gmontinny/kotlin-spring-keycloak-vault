@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: olist-config
+  namespace: olist
+data:
+  DB_NAME: olist_db
+  KC_DB_NAME: keycloak_db
+  KEYCLOAK_REALM: olist-realm
+  KEYCLOAK_CLIENT_ID: olist-client

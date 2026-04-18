@@ -1,0 +1,10 @@
+aws_region             = "us-east-1"
+project_name           = "olist"
+environment            = "dev"
+db_username            = "olist_user"
+db_password            = "CHANGE_ME_olist_pass"
+kc_db_username         = "keycloak_user"
+kc_db_password         = "CHANGE_ME_keycloak_pass"
+eks_node_instance_type = "t3.medium"
+eks_desired_nodes      = 2
+eks_max_nodes          = 4

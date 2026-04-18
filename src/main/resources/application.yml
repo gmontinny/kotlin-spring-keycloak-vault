@@ -1,0 +1,85 @@
+server:
+  port: ${APP_PORT:9090}
+
+spring:
+  application:
+    name: spring-boot-keycloak-oauth2
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/${DB_NAME:olist_db}}
+    username: ${DB_USERNAME:olist_user}
+    password: ${DB_PASSWORD:olist_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration/structure}
+    baseline-on-migrate: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: ${KEYCLOAK_CLIENT_ID:olist-client}
+            client-secret: ${KEYCLOAK_CLIENT_SECRET:olist-client-secret}
+            scope: openid,profile,email,roles
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            issuer-uri: ${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI:${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/olist-realm}}
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/olist-realm}}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://localhost:8080/realms/olist-realm/protocol/openid-connect/certs}
+
+  cloud:
+    vault:
+      uri: ${SPRING_CLOUD_VAULT_URI:http://localhost:8200}
+      token: ${VAULT_TOKEN:vault-root-token}
+      enabled: ${SPRING_CLOUD_VAULT_ENABLED:true}
+      kv:
+        enabled: ${SPRING_CLOUD_VAULT_KV_ENABLED:true}
+        backend: ${SPRING_CLOUD_VAULT_KV_BACKEND:secret}
+        application-name: ${SPRING_CLOUD_VAULT_KV_APPLICATION_NAME:keycloak-oauth}
+
+  config:
+    import: optional:vault://
+
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: ${KEYCLOAK_CLIENT_ID:olist-client}
+      client-secret: ${KEYCLOAK_CLIENT_SECRET:olist-client-secret}
+      scopes: openid,profile,email,roles
+      use-pkce-with-authorization-code-grant: true
+    path: /swagger-ui.html
+  default-flat-param-object: true
+
+app:
+  swagger:
+    oauth2:
+      auth-url: ${SWAGGER_OAUTH2_AUTH_URL:http://localhost:${KEYCLOAK_PORT:8080}/realms/${KEYCLOAK_REALM:olist-realm}/protocol/openid-connect/auth}
+      token-url: ${SWAGGER_OAUTH2_TOKEN_URL:http://localhost:${KEYCLOAK_PORT:8080}/realms/${KEYCLOAK_REALM:olist-realm}/protocol/openid-connect/token}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.flywaydb: INFO

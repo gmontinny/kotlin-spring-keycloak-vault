@@ -1,0 +1,10 @@
+location         = "East US"
+project_name     = "olist"
+environment      = "dev"
+db_username      = "olist_user"
+db_password      = "CHANGE_ME_olist_pass"
+kc_db_username   = "keycloak_user"
+kc_db_password   = "CHANGE_ME_keycloak_pass"
+aks_node_vm_size = "Standard_B2s"
+aks_node_count   = 2
+aks_max_nodes    = 4

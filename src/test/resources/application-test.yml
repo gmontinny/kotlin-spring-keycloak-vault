@@ -1,0 +1,50 @@
+spring:
+  config:
+    import: optional:vault://
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+
+  flyway:
+    enabled: false
+
+  cloud:
+    vault:
+      enabled: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: test-client
+            client-secret: test-secret
+            scope: openid
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          google:
+            client-id: test-google-id
+            client-secret: test-google-secret
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/test-realm
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/test-realm
+
+server:
+  port: 0
+
+springdoc:
+  swagger-ui:
+    enabled: false
