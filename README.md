@@ -251,6 +251,13 @@ As migrations são separadas em dois diretórios para suportar execução local 
 
 ## 🌐 API Endpoints
 
+### Auth `/api/auth`
+
+| Método | Endpoint | Descrição | Role |
+|--------|----------|-----------|------|
+| POST | `/api/auth/token` | Obter token com usuário e senha | Público |
+| POST | `/api/auth/refresh` | Renovar token com refresh_token | Público |
+
 ### Customers `/api/v1/customers`
 
 | Método | Endpoint | Descrição | Role |
@@ -457,7 +464,24 @@ docker-compose up -d postgres-app postgres-keycloak keycloak vault
 ### 5. Obter token de acesso
 
 ```bash
-# Via Keycloak (usuário admin — role ADMIN)
+# Via API (usuário admin — role ADMIN)
+curl -X POST http://localhost:9090/api/auth/token \
+  -d "username=admin" \
+  -d "password=admin"
+
+# Via API (usuário user — role USER, apenas leitura)
+curl -X POST http://localhost:9090/api/auth/token \
+  -d "username=user" \
+  -d "password=user"
+
+# Renovar token com refresh_token
+curl -X POST http://localhost:9090/api/auth/refresh \
+  -d "refresh_token=<REFRESH_TOKEN>"
+```
+
+Ou via Keycloak diretamente:
+
+```bash
 curl -X POST http://localhost:8080/realms/olist-realm/protocol/openid-connect/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
@@ -465,15 +489,6 @@ curl -X POST http://localhost:8080/realms/olist-realm/protocol/openid-connect/to
   -d "client_secret=olist-client-secret" \
   -d "username=admin" \
   -d "password=admin"
-
-# Via Keycloak (usuário user — role USER, apenas leitura)
-curl -X POST http://localhost:8080/realms/olist-realm/protocol/openid-connect/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=password" \
-  -d "client_id=olist-client" \
-  -d "client_secret=olist-client-secret" \
-  -d "username=user" \
-  -d "password=user"
 ```
 
 ### 6. Chamar a API
@@ -723,6 +738,43 @@ Adicione ao `/etc/hosts` (ou `C:\Windows\System32\drivers\etc\hosts`):
 cd k8s
 chmod +x destroy.sh
 ./destroy.sh
+```
+
+---
+
+## ⏱️ Rate Limiting
+
+A API implementa rate limiting por IP usando Token Bucket:
+
+| Configuração | Valor Padrão |
+|-------------|-------------|
+| Requisições por minuto | 60 |
+| Escopo | Apenas `/api/**` |
+| Identificação | IP do cliente (`X-Forwarded-For` ou `remoteAddr`) |
+
+Headers de resposta:
+
+| Header | Descrição |
+|--------|-----------|
+| `X-RateLimit-Limit` | Limite máximo por minuto |
+| `X-RateLimit-Remaining` | Requisições restantes |
+| `Retry-After` | Segundos para aguardar (quando 429) |
+
+Quando excede o limite, retorna HTTP 429:
+
+```json
+{
+  "status": 429,
+  "error": "Too Many Requests",
+  "message": "Rate limit exceeded. Try again in 60 seconds."
+}
+```
+
+Configurável via `application.yml`:
+
+```yaml
+rate-limit:
+  requests-per-minute: 60
 ```
 
 ---

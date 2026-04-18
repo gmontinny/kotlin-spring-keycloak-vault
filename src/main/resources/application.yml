@@ -83,3 +83,6 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.flywaydb: INFO
+
+rate-limit:
+  requests-per-minute: 60
