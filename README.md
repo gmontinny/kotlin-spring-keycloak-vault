@@ -753,6 +753,3 @@ rate-limit:
 
 ---
 
-## 📝 Licença
-
-MIT
